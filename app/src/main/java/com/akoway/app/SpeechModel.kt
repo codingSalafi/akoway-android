@@ -41,9 +41,8 @@ object SpeechModel {
         ModelFile("LICENSE-NOTICE.txt", 897, "240be8df9f067be93af0e654cc078e447fbd1861490df6226cd06d55677863b8"),
     )
 
-    // Filled in once the compressed encoder is built (bark-clean-upload-fast-manifest.json)
-    private const val ENCODER_BR_SIZE = 0L
-    private const val ENCODER_BR_SHA256 = ""
+    private const val ENCODER_BR_SIZE = 223_934_948L
+    private const val ENCODER_BR_SHA256 = "d00cc1a73aa2167bcf3d4d700628a88da7eb1715f5470f0257a6dfbc6d64a215"
 
     val downloadBytes get() = FILES.sumOf { it.downloadSize }
 
