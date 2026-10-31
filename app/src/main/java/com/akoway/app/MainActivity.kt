@@ -53,6 +53,10 @@ class MainActivity : Activity() {
         val view = LinearLayout(this@MainActivity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dpi(18), dpi(18), dpi(18), dpi(18))
+            if (Build.VERSION.SDK_INT >= 28) {   // a soft, green-tinted shadow rather than a grey one
+                outlineSpotShadowColor = 0x553A5A20
+                outlineAmbientShadowColor = 0x333A5A20
+            }
             addView(LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 addView(iconBox, LinearLayout.LayoutParams(dpi(56), dpi(56)))
@@ -68,12 +72,15 @@ class MainActivity : Activity() {
         }
 
         fun done(isDone: Boolean, doneText: String) {
-            view.background = if (isDone) Ui.rounded(Ui.LIME, dp(28f)) else Ui.rounded(Ui.WHITE, dp(28f), dpi(2), Ui.INK)
+            // Soft white cards throughout; the lime tick in the ink box is what says "done",
+            // and the step still to do keeps an ink outline so it stands out
+            view.background = if (isDone) Ui.rounded(Ui.WHITE, dp(28f)) else Ui.rounded(Ui.WHITE, dp(28f), dpi(2), Ui.INK)
+            view.elevation = if (isDone) dp(3f) else dp(8f)
             iconBox.background = Ui.rounded(if (isDone) Ui.INK else Ui.PALE, dp(18f))
             icon.icon = if (isDone) IconView.Icon.CHECK else iconKind
             icon.invalidate()
             detail.text = if (isDone) doneText else about
-            detail.setTextColor(if (isDone) Ui.INK else Ui.SUBTLE)
+            detail.setTextColor(Ui.SUBTLE)
             button.visibility = if (isDone) View.GONE else View.VISIBLE
         }
     }
@@ -146,9 +153,11 @@ class MainActivity : Activity() {
         val steps = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dpi(16), dpi(18), dpi(16), 0)
+            clipToPadding = false
+            clipChildren = false
             ready = readyCard()
             addView(ready, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dpi(12) })
-            for (step in listOf(model, mic, keyboard)) addView(step.view, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dpi(12) })
+            for (step in listOf(model, mic, keyboard)) addView(step.view, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dpi(14) })
             addView(TextView(context).apply {
                 text = "EXTRA"; textSize = 13f; typeface = Ui.heavy(700); letterSpacing = 0.12f; setTextColor(Ui.MUTED)
                 setPadding(dpi(6), dpi(14), 0, dpi(8))
