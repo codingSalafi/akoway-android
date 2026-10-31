@@ -19,11 +19,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Speed + accuracy test, started with adb (see bench.sh) -->
-        <activity
-            android:name=".BenchActivity"
-            android:exported="true" />
-
         <!-- The edge tab and pill over other apps -->
         <service
             android:name=".AkowayService"

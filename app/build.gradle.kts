@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -14,15 +15,27 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
         // Phones only; keeps the APK small
         ndk { abiFilters += listOf("arm64-v8a") }
+    }
+
+    // The release key lives outside the repo (D:/akoway-keys); every update must be signed with it
+    val keys = file("D:/akoway-keys/keystore.properties")
+    signingConfigs {
+        if (keys.exists()) create("release") {
+            val p = Properties().apply { keys.inputStream().use { load(it) } }
+            storeFile = file(p.getProperty("storeFile"))
+            storePassword = p.getProperty("storePassword")
+            keyAlias = p.getProperty("keyAlias")
+            keyPassword = p.getProperty("keyPassword")
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
