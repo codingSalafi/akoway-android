@@ -17,7 +17,8 @@ import java.nio.ByteOrder
  *   <external files>/clips/          16 kHz mono .wav test clips
  *   <external files>/clips/reference.tsv  name<TAB>text from the Windows app
  * Writes results.tsv and summary.txt next to them, and logs to logcat tag "AkowayBench".
- * Optional extras: --ei threads N, --ei limit N (first N clips; long runs heat the phone and slow it down)
+ * Optional extras: --ei threads N, --ei limit N (first N clips; long runs heat the phone and slow it down),
+ *   --es model FOLDER (another model folder next to bark-3.0-clean, to compare variants)
  */
 class BenchActivity : Activity() {
 
@@ -30,7 +31,8 @@ class BenchActivity : Activity() {
 
         val threads = intent.getIntExtra("threads", 0)
         val limit = intent.getIntExtra("limit", Int.MAX_VALUE)
-        Thread { runBench(threads, limit) }.start()
+        val model = intent.getStringExtra("model") ?: "bark-3.0-clean"
+        Thread { runBench(threads, limit, model) }.start()
     }
 
     private fun say(line: String) {
@@ -38,12 +40,12 @@ class BenchActivity : Activity() {
         runOnUiThread { log.append(line + "\n") }
     }
 
-    private fun runBench(threads: Int, limit: Int) {
+    private fun runBench(threads: Int, limit: Int, model: String) {
         try {
             val root = getExternalFilesDir(null)!!
-            val modelDir = File(root, "bark-3.0-clean")
+            val modelDir = File(root, model)
             val clipsDir = File(root, "clips")
-            say("${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE}, ${Runtime.getRuntime().availableProcessors()} cores, threads=${if (threads > 0) threads else "default"}")
+            say("${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE}, ${Runtime.getRuntime().availableProcessors()} cores, threads=${if (threads > 0) threads else "default"}, model $model")
 
             var start = System.nanoTime()
             BarkEngine(modelDir, threads).use { engine ->
