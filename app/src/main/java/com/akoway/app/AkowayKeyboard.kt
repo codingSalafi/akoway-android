@@ -21,8 +21,8 @@ import android.widget.TextView
 
 /**
  * The Akoway keyboard: a voice-only panel for when the edge tab can't reach a text box. Switch to
- * it from your usual keyboard (long-press Gboard's space bar); it starts listening straight away,
- * writes what you said, and switches back to your usual keyboard.
+ * it from your usual keyboard; it starts listening straight away and writes what you said. It stays
+ * up so you can keep talking; the keyboard key takes you back to your usual keyboard.
  */
 class AkowayKeyboard : InputMethodService() {
 
@@ -165,8 +165,7 @@ class AkowayKeyboard : InputMethodService() {
         ic.commitText(piece, 1)
         Log.i(TAG, "Committed ${piece.length} chars")
         setState(State.IDLE)
-        label.text = "Done."
-        main.postDelayed({ if (state == State.IDLE) backToKeyboard(offerList = false) }, 400)
+        label.text = "Done. Tap the mic to keep going."
     }
 
     private fun cancel() {
@@ -198,13 +197,13 @@ class AkowayKeyboard : InputMethodService() {
 
     // ── Keys ──────────────────────────────────────────────────────────────────
 
-    private fun backToKeyboard(offerList: Boolean = true) {
+    private fun backToKeyboard() {
         cancel()
         val switched = if (Build.VERSION.SDK_INT >= 28) switchToPreviousInputMethod()
         else @Suppress("DEPRECATION") (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
             .switchToLastInputMethod(window.window?.attributes?.token)
         // Akoway is the only keyboard turned on: offer the list instead
-        if (!switched && offerList) (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showInputMethodPicker()
+        if (!switched) (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showInputMethodPicker()
     }
 
     private fun deleteOne() {

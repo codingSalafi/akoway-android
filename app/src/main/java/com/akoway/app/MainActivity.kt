@@ -66,7 +66,7 @@ class MainActivity : Activity() {
         service = Step(3, "Turn on Akoway in Accessibility", "This lets Akoway show its tab over other apps and type into the text box you're in. In the list, tap Akoway, then turn it on.", "Open settings") {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
-        keyboard = Step(4, "Optional: turn on the Akoway keyboard", "For the odd app where the tab can't type into the box. To use it, long-press the space bar on your usual keyboard and pick Akoway voice; it listens straight away and switches back when it's written your words.", "Open settings") {
+        keyboard = Step(4, "Optional: turn on the Akoway keyboard", "For the odd app where the tab can't type into the box. To use it, long-press the space bar on your usual keyboard and pick Akoway voice; it listens straight away. Tap the keyboard key when you want your usual keyboard back.", "Open settings") {
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
         }
         ready = TextView(this).apply {
