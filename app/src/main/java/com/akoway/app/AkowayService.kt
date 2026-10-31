@@ -22,7 +22,6 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.widget.LinearLayout
 import android.widget.TextView
-import java.util.concurrent.Executors
 import kotlin.math.abs
 
 /**
@@ -36,9 +35,7 @@ class AkowayService : AccessibilityService() {
     private enum class State { IDLE, LISTENING, PROCESSING, WRITING, ERROR }
 
     private val main = Handler(Looper.getMainLooper())
-    private val worker = Executors.newSingleThreadExecutor()
     private val recorder = Recorder()
-    private var engine: BarkEngine? = null   // only touched on the worker thread
     private var generation = 0               // bumped on cancel so a late result is dropped
     private var state = State.IDLE
 
@@ -52,7 +49,7 @@ class AkowayService : AccessibilityService() {
     override fun onServiceConnected() {
         windows = getSystemService(WINDOW_SERVICE) as WindowManager
         buildOverlay()
-        if (SpeechModel.isReady(this)) worker.execute { loadEngine() }
+        Speech.acquire(this)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
@@ -62,8 +59,7 @@ class AkowayService : AccessibilityService() {
         generation++
         if (state == State.LISTENING) recorder.stop()
         if (::root.isInitialized) windows.removeView(root)
-        worker.execute { engine?.close(); engine = null }
-        worker.shutdown()
+        Speech.release()
         super.onDestroy()
     }
 
@@ -71,7 +67,7 @@ class AkowayService : AccessibilityService() {
         super.onTrimMemory(level)
         // The model holds about 1.3 GB; give it back if Android is running out, it reloads in ~3 s
         @Suppress("DEPRECATION")
-        if (level >= TRIM_MEMORY_RUNNING_CRITICAL && state == State.IDLE) worker.execute { engine?.close(); engine = null }
+        if (level >= TRIM_MEMORY_RUNNING_CRITICAL && state == State.IDLE) Speech.free()
     }
 
     // ── Dictation ─────────────────────────────────────────────────────────────
@@ -95,7 +91,7 @@ class AkowayService : AccessibilityService() {
         }
         pill.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
         setState(State.LISTENING)
-        worker.execute { loadEngine() }   // usually already loaded; this covers a cold start
+        Speech.warmUp(this)   // usually already loaded; this covers a cold start
     }
 
     private fun stopListening() {
@@ -106,20 +102,12 @@ class AkowayService : AccessibilityService() {
 
         setState(State.PROCESSING)
         val mine = ++generation
-        worker.execute {
-            val text = try {
-                loadEngine()!!.transcribe(audio)
-            } catch (e: Throwable) {
-                Log.e(TAG, "Transcription failed", e)
-                null
-            }
-            main.post {
-                if (mine != generation) return@post   // cancelled meanwhile
-                when {
-                    text == null -> showError("Something went wrong turning that into text. Try again.")
-                    text.isBlank() -> { Log.i(TAG, "No words"); setState(State.IDLE); showLabel("Didn't catch any words.") }
-                    else -> write(text)
-                }
+        Speech.transcribe(this, audio) { text ->
+            if (mine != generation) return@transcribe   // cancelled meanwhile
+            when {
+                text == null -> showError("Something went wrong turning that into text. Try again.")
+                text.isBlank() -> { Log.i(TAG, "No words"); setState(State.IDLE); showLabel("Didn't catch any words.") }
+                else -> write(text)
             }
         }
     }
@@ -143,15 +131,6 @@ class AkowayService : AccessibilityService() {
         if (state == State.LISTENING) recorder.stop()
         setState(State.IDLE)
         collapse()
-    }
-
-    private fun loadEngine(): BarkEngine? {
-        if (engine == null && SpeechModel.isReady(this)) {
-            val start = System.nanoTime()
-            engine = BarkEngine(SpeechModel.folder(this)).also { it.transcribe(FloatArray(8000)) }  // warm-up
-            Log.i(TAG, "Model loaded in ${(System.nanoTime() - start) / 1_000_000} ms")
-        }
-        return engine
     }
 
     private fun setState(s: State) {

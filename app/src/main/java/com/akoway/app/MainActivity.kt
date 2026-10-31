@@ -10,6 +10,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -48,6 +49,7 @@ class MainActivity : Activity() {
     private lateinit var model: Step
     private lateinit var mic: Step
     private lateinit var service: Step
+    private lateinit var keyboard: Step
     private lateinit var progress: ProgressBar
     private lateinit var ready: TextView
     @Volatile private var downloading = false
@@ -63,6 +65,9 @@ class MainActivity : Activity() {
         }
         service = Step(3, "Turn on Akoway in Accessibility", "This lets Akoway show its tab over other apps and type into the text box you're in. In the list, tap Akoway, then turn it on.", "Open settings") {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+        keyboard = Step(4, "Optional: turn on the Akoway keyboard", "For the odd app where the tab can't type into the box. To use it, long-press the space bar on your usual keyboard and pick Akoway voice; it listens straight away and switches back when it's written your words.", "Open settings") {
+            startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
         }
         ready = TextView(this).apply {
             text = "You're all set. In any app, tap the green tab on the right edge of the screen, tap the mic, speak, and tap again."
@@ -83,7 +88,8 @@ class MainActivity : Activity() {
             for (step in listOf(model, mic, service)) {
                 steps.addView(step.view, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
             }
-            steps.addView(ready)
+            steps.addView(ready, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
+            steps.addView(keyboard.view)
             addView(steps)
         }
         setContentView(ScrollView(this).apply { setBackgroundColor(0xFFFFFFFF.toInt()); addView(column) })
@@ -103,6 +109,7 @@ class MainActivity : Activity() {
         if (!downloading) model.done(hasModel, "Downloaded")
         mic.done(hasMic, "Allowed")
         service.done(serviceOn, "On")
+        keyboard.done(isKeyboardOn(), "On. Long-press your keyboard's space bar to switch to it.")
         ready.visibility = if (hasModel && hasMic && serviceOn) View.VISIBLE else View.GONE
     }
 
@@ -141,6 +148,11 @@ class MainActivity : Activity() {
         val enabled = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: return false
         val me = ComponentName(this, AkowayService::class.java)
         return enabled.split(':').any { ComponentName.unflattenFromString(it) == me }
+    }
+
+    private fun isKeyboardOn(): Boolean {
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        return imm.enabledInputMethodList.any { it.packageName == packageName }
     }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()

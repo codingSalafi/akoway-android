@@ -25,6 +25,9 @@ class PillView(context: Context) : View(context) {
             invalidate()
         }
 
+    /** Drawn width; the height follows the frame's proportions. */
+    var widthDp = WIDTH_DP
+
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val shapes = HashMap<PillPaths.Shape, Path>()
     private val rect = RectF()
@@ -44,7 +47,7 @@ class PillView(context: Context) : View(context) {
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val w = (WIDTH_DP * resources.displayMetrics.density).toInt()
+        val w = (widthDp * resources.displayMetrics.density).toInt()
         setMeasuredDimension(w, (w * FRAME_H / FRAME_W).toInt())
     }
 
