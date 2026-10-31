@@ -17,7 +17,7 @@ import java.nio.ByteOrder
  *   <external files>/clips/          16 kHz mono .wav test clips
  *   <external files>/clips/reference.tsv  name<TAB>text from the Windows app
  * Writes results.tsv and summary.txt next to them, and logs to logcat tag "AkowayBench".
- * Optional extra: --ei threads N
+ * Optional extras: --ei threads N, --ei limit N (first N clips; long runs heat the phone and slow it down)
  */
 class BenchActivity : Activity() {
 
@@ -29,7 +29,8 @@ class BenchActivity : Activity() {
         setContentView(ScrollView(this).apply { addView(log) })
 
         val threads = intent.getIntExtra("threads", 0)
-        Thread { runBench(threads) }.start()
+        val limit = intent.getIntExtra("limit", Int.MAX_VALUE)
+        Thread { runBench(threads, limit) }.start()
     }
 
     private fun say(line: String) {
@@ -37,7 +38,7 @@ class BenchActivity : Activity() {
         runOnUiThread { log.append(line + "\n") }
     }
 
-    private fun runBench(threads: Int) {
+    private fun runBench(threads: Int, limit: Int) {
         try {
             val root = getExternalFilesDir(null)!!
             val modelDir = File(root, "bark-3.0-clean")
@@ -53,7 +54,7 @@ class BenchActivity : Activity() {
                 val reference = File(clipsDir, "reference.tsv").takeIf { it.exists() }?.readLines()
                     ?.filter { '\t' in it }?.associate { it.substringBefore('\t') to it.substringAfter('\t') } ?: emptyMap()
 
-                val clips = clipsDir.listFiles { f -> f.name.endsWith(".wav") }!!.sortedBy { it.name }
+                val clips = clipsDir.listFiles { f -> f.name.endsWith(".wav") }!!.sortedBy { it.name }.take(limit)
                 var audioSec = 0.0
                 var procSec = 0.0
                 var same = 0
@@ -69,12 +70,12 @@ class BenchActivity : Activity() {
                     val match = reference[clip.name] == text
                     if (match) same++
                     lines.add("${clip.name}\t$text")
-                    say("%s %.1fs audio in %.2fs%s".format(clip.name, seconds, took, if (match) "" else "  DIFFERS: $text"))
+                    say("%s %.1fs audio in %.2fs [%s]%s".format(clip.name, seconds, took, engine.lastTimings, if (match) "" else "  DIFFERS: $text"))
                 }
                 File(root, "results.tsv").writeText(lines.joinToString("\n", postfix = "\n"))
 
                 val summary = "%d clips, %.1fs audio in %.1fs, RTF %.3f (%.1fs per 10s of speech), same as Windows: %d/%d, memory %d MB"
-                    .format(clips.size, audioSec, procSec, procSec / audioSec, 10 * procSec / audioSec, same, reference.size, pssMb())
+                    .format(clips.size, audioSec, procSec, procSec / audioSec, 10 * procSec / audioSec, same, clips.count { it.name in reference }, pssMb())
                 File(root, "summary.txt").writeText(summary + "\n")
                 say("DONE " + summary)
             }

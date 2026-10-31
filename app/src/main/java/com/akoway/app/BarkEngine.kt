@@ -32,6 +32,10 @@ class BarkEngine(modelDir: File, threads: Int = 0, private val leadInSeconds: Do
     private val decoderLayers: Int
     private val decoderHidden: Int
 
+    /** Where the time went in the last transcribe() call, e.g. "features 12 ms, encoder 900 ms, decoding 300 ms (40 tokens)". */
+    var lastTimings = ""
+        private set
+
     init {
         val options = OrtSession.SessionOptions().apply {
             if (threads > 0) setIntraOpNumThreads(threads)
@@ -57,6 +61,9 @@ class BarkEngine(modelDir: File, threads: Int = 0, private val leadInSeconds: Do
         val leadIn = (leadInSeconds * SAMPLE_RATE).toInt()
         val wave = FloatArray(leadIn + samples.size)
         samples.copyInto(wave, leadIn)
+        var mark = System.nanoTime()
+        var featuresMs = 0L
+        fun lap(): Long = ((System.nanoTime() - mark) / 1_000_000).also { mark = System.nanoTime() }
 
         // 1. Waveform -> log-mel features, then 2. features -> acoustic frames, shape (1, hidden, frames)
         val hidden: Int
@@ -65,6 +72,7 @@ class BarkEngine(modelDir: File, threads: Int = 0, private val leadInSeconds: Do
         tensor(wave, longArrayOf(1, wave.size.toLong())).use { waveforms ->
             tensor(longArrayOf(wave.size.toLong()), longArrayOf(1)).use { lengths ->
                 preprocessor.run(mapOf("waveforms" to waveforms, "lengths" to lengths)).use { features ->
+                    featuresMs = lap()
                     encoder.run(
                         mapOf(
                             "features" to features.get("features").get() as OnnxTensor,
@@ -86,6 +94,8 @@ class BarkEngine(modelDir: File, threads: Int = 0, private val leadInSeconds: Do
                 }
             }
         }
+
+        val encoderMs = lap()
 
         // 3. Greedy TDT decoding: each step predicts a token and how many frames to skip
         val state = DecoderState(FloatArray(decoderLayers * decoderHidden), FloatArray(decoderLayers * decoderHidden))
@@ -110,6 +120,7 @@ class BarkEngine(modelDir: File, threads: Int = 0, private val leadInSeconds: Do
             frame += skip
         }
 
+        lastTimings = "features $featuresMs ms, encoder $encoderMs ms, decoding ${lap()} ms (${ids.size} tokens, $frameCount frames)"
         return decodeTokens(ids)
     }
 
