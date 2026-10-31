@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Akoway</string>
+    <string name="service_summary">Offline voice typing from a tab on the edge of your screen</string>
+    <string name="service_description">Akoway shows a small tab on the edge of your screen. Tap it and speak, and Akoway types your words into the text box you are using. It needs this permission to draw the tab over other apps and to put text into their text boxes. Speech is turned into text on your phone; nothing you say or type is sent anywhere.</string>
 </resources>

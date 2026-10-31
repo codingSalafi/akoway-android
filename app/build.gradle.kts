@@ -38,4 +38,5 @@ kotlin {
 
 dependencies {
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.31.1")
+    implementation("org.brotli:dec:0.1.2")
 }
