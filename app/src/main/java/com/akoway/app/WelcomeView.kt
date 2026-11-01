@@ -14,6 +14,7 @@ import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import com.akoway.app.Ui.dp
 import com.akoway.app.Ui.dpi
@@ -60,6 +61,10 @@ class WelcomeView(context: Context, private val onDone: () -> Unit) : LinearLayo
         val side = context.dpi(24)
         setPadding(side, 0, side, context.dpi(20))
 
+        // Everything but the button scrolls if it has to, so "Get started" is always on screen
+        val short = resources.configuration.screenHeightDp < 720
+        val body = LinearLayout(context).apply { orientation = VERTICAL; clipChildren = false }
+
         // Logo and name
         val brand = LinearLayout(context).apply {
             orientation = HORIZONTAL
@@ -70,7 +75,7 @@ class WelcomeView(context: Context, private val onDone: () -> Unit) : LinearLayo
                 setPadding(context.dpi(10), 0, 0, 0)
             })
         }
-        addView(brand, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = context.dpi(12) })
+        body.addView(brand, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = context.dpi(12) })
 
         // The little dictation demo
         val demo = LinearLayout(context).apply {
@@ -94,29 +99,34 @@ class WelcomeView(context: Context, private val onDone: () -> Unit) : LinearLayo
             }
             addView(typed, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         }
-        addView(demo, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = context.dpi(34) })
+        body.addView(demo, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = context.dpi(if (short) 18 else 34) })
 
-        addView(View(context), LayoutParams(1, 0, 1f))
-
-        // Promises tumble into a pile here
-        addView(pile, LayoutParams(LayoutParams.MATCH_PARENT, context.dpi(196)))
+        // Promises tumble into a pile here; it takes whatever height is left, so short screens
+        // still show the button (and get fewer pills)
+        body.addView(pile, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f).apply { topMargin = context.dpi(8) })
 
         val headline = TextView(context).apply {
             val words = "Talk, and it's typed."
             text = SpannableString(words).apply {
                 setSpan(ForegroundColorSpan(Ui.LIME), words.indexOf("it's"), words.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
-            textSize = 40f; typeface = Ui.heavy(); setTextColor(Ui.WHITE)
+            textSize = if (short) 32f else 40f; typeface = Ui.heavy(); setTextColor(Ui.WHITE)
             setLineSpacing(0f, 0.95f)
         }
-        addView(headline, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = context.dpi(18) })
+        body.addView(headline, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = context.dpi(18) })
         val sub = TextView(context).apply {
             text = "Voice typing for every app, on your phone. No internet, no account, nothing you say ever leaves it."
             textSize = 16f; setTextColor(Ui.MUTED); setLineSpacing(0f, 1.15f)
         }
-        addView(sub, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = context.dpi(10) })
+        body.addView(sub, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = context.dpi(10) })
+        addView(ScrollView(context).apply {
+            isFillViewport = true
+            isVerticalScrollBarEnabled = false
+            clipChildren = false
+            addView(body)
+        }, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
         val go = Ui.button(context, "Get started", Ui.LIME, Ui.INK) { stop(); onDone() }
-        addView(go, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = context.dpi(22) })
+        addView(go, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = context.dpi(if (short) 14 else 22) })
 
         reveal += listOf(brand, demo, headline, sub, go)
     }
@@ -185,12 +195,15 @@ class WelcomeView(context: Context, private val onDone: () -> Unit) : LinearLayo
         val h = pile.height.toFloat()
         val chipH = context.dp(54f)
         val gap = context.dp(4f)
-        val chips = promises.map { chip(it) }
+        // Three rows at most, as many as fit; each row keeps its own pills
+        val rows = if (h < chipH) 0 else minOf(3, ((h - chipH) / (chipH - gap)).toInt() + 1)
+        val chips = promises.take(listOf(0, 2, 3, 5)[rows]).map { chip(it) }
+        if (chips.isEmpty()) return
         chips.forEach { pile.addView(it, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, chipH.toInt())) }
         pile.post {
             // Where each one comes to rest: a loose pile, three rows from the bottom up
             fun row(n: Int) = h - chipH - n * (chipH - gap)
-            val cw = chips.map { it.width.toFloat() }
+            val cw = chips.map { it.width.toFloat() } + List(5) { 0f }
             val rest = listOf(
                 Triple(0f, row(0), -3f),
                 Triple(w - cw[1], row(0), 4f),
