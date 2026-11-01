@@ -20,7 +20,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 /**
- * The Akoway keyboard: a voice-only panel for when the edge tab can't reach a text box. Switch to
+ * The Akoway keyboard: a voice-only panel. Switch to
  * it from your usual keyboard and tap the mic to start; it writes what you said. It stays up so you
  * can keep talking; the keyboard key takes you back to your usual keyboard.
  */

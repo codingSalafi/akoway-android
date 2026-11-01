@@ -7,7 +7,7 @@ import android.util.Log
 import java.util.concurrent.Executors
 
 /**
- * The one speech engine in the process, shared by the edge tab and the keyboard so the 1.3 GB
+ * The one speech engine in the process, shared by everything that listens so the 1.3 GB
  * model is only ever loaded once. All model work runs on a single background thread.
  */
 object Speech {

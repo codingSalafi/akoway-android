@@ -9,7 +9,7 @@
         android:label="@string/app_name"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
-        <!-- Setup: download the model, allow the mic, turn on the service -->
+        <!-- Setup: download the model, allow the mic, turn on the keyboard -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -19,21 +19,7 @@
             </intent-filter>
         </activity>
 
-        <!-- The edge tab and pill over other apps -->
-        <service
-            android:name=".AkowayService"
-            android:exported="false"
-            android:label="@string/app_name"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_service" />
-        </service>
-
-        <!-- The voice-only keyboard, for text boxes the tab can't type into -->
+        <!-- The voice-only keyboard -->
         <service
             android:name=".AkowayKeyboard"
             android:exported="true"

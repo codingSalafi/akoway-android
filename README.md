@@ -21,9 +21,9 @@ Needs Android 8 or newer on a 64-bit (arm64) phone, with about 1.5 GB of free me
   at the bottom of the screen or by long-pressing your keyboard's space bar. Tap the mic to
   start, tap it again when you're done, and your words are typed. The keyboard key takes you
   back to your usual keyboard.
-- **Floating tab (optional):** a tab on the right edge of the screen that types into any app without
-  switching keyboard. It uses Android's Accessibility permission. If Akoway is greyed out in the
-  Accessibility list, open Settings › Apps › Akoway › ⋮ › Allow restricted settings, then try again.
+- Akoway asks only for the microphone (and the internet, once, to download the model). Earlier
+  versions had a floating tab that used the Accessibility permission; it was removed in 1.0.2
+  because Play Protect blocks sideloaded apps that ask for it.
 
 ## The speech model
 

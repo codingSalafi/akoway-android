@@ -3,7 +3,6 @@ package com.akoway.app
 import android.Manifest
 import android.animation.ValueAnimator
 import android.app.Activity
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -35,7 +34,7 @@ import kotlin.concurrent.thread
 
 /**
  * First run shows the welcome; after that, setup: download the model, allow the microphone, turn on
- * the Akoway keyboard, plus the optional floating tab. Each step turns lime with a tick once done,
+ * the Akoway keyboard. Each step turns lime with a tick once done,
  * and the screen rechecks whenever it comes back to the front.
  */
 class MainActivity : Activity() {
@@ -89,7 +88,6 @@ class MainActivity : Activity() {
     private lateinit var model: Step
     private lateinit var mic: Step
     private lateinit var keyboard: Step
-    private lateinit var tab: Step
     private lateinit var bar: BarView
     private lateinit var modelBar: BarView
     private lateinit var progressText: TextView
@@ -146,9 +144,6 @@ class MainActivity : Activity() {
         keyboard = Step(IconView.Icon.KEYBOARD, "Turn on the Akoway keyboard",
             "Switch on \"Akoway voice\". Android warns that keyboards can see what you type; Akoway never sends anything anywhere.",
             "Open settings") { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) }
-        tab = Step(IconView.Icon.TAB, "Floating tab",
-            "A tab on the edge of your screen that types into any app without switching keyboard. If Akoway is greyed out in the list: Settings › Apps › Akoway › ⋮ › Allow restricted settings.",
-            "Turn on") { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
 
         val steps = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -158,11 +153,6 @@ class MainActivity : Activity() {
             ready = readyCard()
             addView(ready, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dpi(12) })
             for (step in listOf(model, mic, keyboard)) addView(step.view, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dpi(14) })
-            addView(TextView(context).apply {
-                text = "EXTRA"; textSize = 13f; typeface = Ui.heavy(700); letterSpacing = 0.12f; setTextColor(Ui.MUTED)
-                setPadding(dpi(6), dpi(14), 0, dpi(8))
-            })
-            addView(tab.view, LinearLayout.LayoutParams(-1, -2))
             addView(TextView(context).apply {
                 text = "Bark 3.0 Clean by Underdog · runs fully on your phone"
                 textSize = 13f; setTextColor(Ui.MUTED); gravity = Gravity.CENTER
@@ -278,7 +268,6 @@ class MainActivity : Activity() {
         if (!downloading) model.done(hasModel, "Downloaded. Works offline from now on.")
         mic.done(hasMic, "Allowed.")
         keyboard.done(keyboardOn, "On. Tap the keyboard button at the bottom of the screen, or long-press your keyboard's space bar, to switch to it.")
-        tab.done(isServiceOn(), "On. Tap the tab on the right edge of any app to talk.")
         val count = listOf(hasModel, hasMic, keyboardOn).count { it }
         progressText.text = if (count == 3) "All set. Akoway works in every app." else "$count of 3 steps done · about a minute"
         bar.setFraction(count / 3f, animate = true)
@@ -314,12 +303,6 @@ class MainActivity : Activity() {
                 }
             }
         }
-    }
-
-    private fun isServiceOn(): Boolean {
-        val enabled = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: return false
-        val me = ComponentName(this, AkowayService::class.java)
-        return enabled.split(':').any { ComponentName.unflattenFromString(it) == me }
     }
 
     private fun isKeyboardOn(): Boolean {
