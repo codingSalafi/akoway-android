@@ -6,6 +6,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -109,7 +110,19 @@ class MainActivity : Activity() {
         if (::column.isInitialized) refresh(animate = false)
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) = refresh(animate = true)
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        prefs().edit().putBoolean(KEY_MIC_ASKED, true).apply()
+        refresh(animate = true)
+    }
+
+    /** Some phones lack a settings page; fall back to the main Settings screen rather than crash. */
+    private fun open(intent: Intent) {
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) {}
+        }
+    }
 
     // ── Welcome ───────────────────────────────────────────────────────────────
 
@@ -139,11 +152,15 @@ class MainActivity : Activity() {
         model.extra.addView(modelBar, LinearLayout.LayoutParams(-1, dpi(12)).apply { topMargin = dpi(16) })
         mic = Step(IconView.Icon.MIC, "Allow the microphone",
             "Your voice is turned into text right here on the phone.", "Allow") {
-            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 1)
+            // After "Don't allow" twice Android stops asking, so the button would do nothing;
+            // send people to the app's settings page instead
+            if (prefs().getBoolean(KEY_MIC_ASKED, false) && !shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO))
+                open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+            else requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 1)
         }
         keyboard = Step(IconView.Icon.KEYBOARD, "Turn on the Akoway keyboard",
             "Switch on \"Akoway voice\". Android warns that keyboards can see what you type; Akoway never sends anything anywhere.",
-            "Open settings") { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) }
+            "Open settings") { open(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) }
 
         val steps = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -323,6 +340,7 @@ class MainActivity : Activity() {
 
     companion object {
         private const val KEY_WELCOMED = "welcomed"
+        private const val KEY_MIC_ASKED = "mic_asked"
     }
 }
 

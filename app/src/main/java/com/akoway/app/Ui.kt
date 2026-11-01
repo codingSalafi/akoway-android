@@ -50,10 +50,12 @@ object Ui {
         background = rounded(fill, h / 2f)
         setPadding(context.dpi(24), 0, context.dpi(24), 0)
         setOnClickListener {
-            it.animate().scaleX(0.96f).scaleY(0.96f).setDuration(70).withEndAction {
-                it.animate().scaleX(1f).scaleY(1f).setDuration(120).start()
-                onClick()
-            }.start()
+            // Act straight away; the squeeze is only for show. (Waiting for it to end lost taps
+            // on phones where animations are off or another animation on the button cut it short.)
+            onClick()
+            it.animate().cancel()
+            it.scaleX = 0.96f; it.scaleY = 0.96f
+            it.animate().scaleX(1f).scaleY(1f).setStartDelay(0).setDuration(160).start()
         }
     }
 }
