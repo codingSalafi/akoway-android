@@ -21,8 +21,8 @@ import android.widget.TextView
 
 /**
  * The Akoway keyboard: a voice-only panel for when the edge tab can't reach a text box. Switch to
- * it from your usual keyboard; it starts listening straight away and writes what you said. It stays
- * up so you can keep talking; the keyboard key takes you back to your usual keyboard.
+ * it from your usual keyboard and tap the mic to start; it writes what you said. It stays up so you
+ * can keep talking; the keyboard key takes you back to your usual keyboard.
  */
 class AkowayKeyboard : InputMethodService() {
 
@@ -107,8 +107,8 @@ class AkowayKeyboard : InputMethodService() {
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         setState(State.IDLE)
-        // Opening the keyboard means you want to speak, so start listening at once
-        if (!restarting) startListening()
+        // The mic only turns on when you tap it; meanwhile get the model ready so that tap is instant
+        Speech.warmUp(this)
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {

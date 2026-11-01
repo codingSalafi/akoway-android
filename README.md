@@ -18,8 +18,8 @@ Needs Android 8 or newer on a 64-bit (arm64) phone, with about 1.5 GB of free me
 ## Using it
 
 - **Akoway keyboard (main way):** in any text box, switch to "Akoway voice" with the keyboard button
-  at the bottom of the screen or by long-pressing your keyboard's space bar. It starts listening
-  straight away; tap the mic when you're done and your words are typed. The keyboard key takes you
+  at the bottom of the screen or by long-pressing your keyboard's space bar. Tap the mic to
+  start, tap it again when you're done, and your words are typed. The keyboard key takes you
   back to your usual keyboard.
 - **Floating tab (optional):** a tab on the right edge of the screen that types into any app without
   switching keyboard. It uses Android's Accessibility permission. If Akoway is greyed out in the
